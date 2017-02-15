@@ -51,6 +51,8 @@ if (isset($mergesession) && !empty($mergesession) && isset($mergesess1) && !empt
         } else {
             $delquery = "DELETE FROM $db_sessions_table WHERE session = '$value'";
             mysqli_query($con, $delquery) or die(mysqli_error($con));
+            $delnoticequery = "DELETE FROM $db_table WHERE session = '$value' AND notice = 'Trip Started'";
+            mysqli_query($con, $delquery) or die(mysqli_error($con));
             $updatequery = "UPDATE $db_table SET session=$newsession WHERE session=".quote_value($value);
             mysqli_query($con, $updatequery) or die(mysqli_error($con));
         }

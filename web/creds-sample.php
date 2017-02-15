@@ -32,8 +32,13 @@ $use_miles = false;
 $hide_empty_variables = true;
 $show_session_length = true;
 
+$show_markers = true;
+$error_codes_url = "http://www.dtcsearch.com/";     // Shorter explanation
+#$error_codes_url = "https://www.obd-codes.com/";   // Longer explanation
+
 #Sessions less than limit will not be shown
 $min_session_size = 20;
 
 //echo "<!-- End creds.php -->\r\n";
+
 ?>
