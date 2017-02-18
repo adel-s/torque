@@ -1,6 +1,7 @@
 <?php
 //echo "<!-- Begin session.php at ".date("H:i:s", microtime(true))." -->\r\n";
-$loadstart = date("g:i:s A", microtime(true));
+require_once("./creds.php");
+$loadstart = date($time_format, microtime(true));
 $loadmicrostart = explode(' ', microtime());
 $loadmicrostart = $loadmicrostart[1] + $loadmicrostart[0];
 ini_set('memory_limit', '-1');
@@ -78,7 +79,7 @@ if (isset($sids[0])) {
           "lon" => preg_replace('/\s+/', '', $geo["1"]),
           "notice" => $geo["2"],
           "noticeclass" => preg_replace('/.*\.(.*)/i', '${1}', $geo["3"]),
-          "time" => date("F d, Y h:ia", substr($geo["4"], 0, -3)),            // TODO: Use variable for date format from creds.php
+          "time" => date($date_format, substr($geo["4"], 0, -3)),
       ];
   }
 
@@ -637,7 +638,7 @@ if (isset($sids[0])) {
           <a href="./pid_edit.php" title="Edit PIDs">Edit PIDs</a><br />
           <a href="https://github.com/surfrock66/torque" title="View Source On Github">View Source On Github</a>
           <p style="font-size:10px;margin-top:20px;" >
-            Render Start: <?php echo $loadstart; ?>; Render End: <?php $loadend = date("h:i:s A", microtime(true)); echo $loadend; ?><br />
+            Render Start: <?php echo $loadstart; ?>; Render End: <?php $loadend = date($time_format, microtime(true)); echo $loadend; ?><br />
             Load Time: <?php $loadmicroend = explode(' ', microtime()); $loadmicroend = $loadmicroend[1] + $loadmicroend[0]; echo $loadmicroend-$loadmicrostart; ?> seconds<br />
             Session ID: <?php echo $session_id; ?>
           </p>

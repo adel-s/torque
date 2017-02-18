@@ -92,7 +92,7 @@ while($row = mysqli_fetch_assoc($sessionqry)) {
     if ($session_size >= $min_session_size) {
         $sid = $row["session"];
         $sids[] = preg_replace('/\D/', '', $sid);
-        $seshdates[$sid] = date("F d, Y  h:ia", substr($sid, 0, -3));
+        $seshdates[$sid] = date($date_format, substr($sid, 0, -3));
         $seshsizes[$sid] = " (Length $session_duration_str)";
         $seshprofile[$sid] = " ($session_profileName Profile)"; 
     }
