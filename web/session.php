@@ -186,7 +186,7 @@ if (isset($sids[0])) {
   $yearquery = mysqli_query($con, "SELECT YEAR(FROM_UNIXTIME(session/1000)) as 'year'
               FROM $db_sessions_table WHERE session <> ''
               GROUP BY YEAR(FROM_UNIXTIME(session/1000)) 
-              ORDER BY YEAR(FROM_UNIXTIME(session/1000))") or die(mysqli_error($con));
+              ORDER BY YEAR(FROM_UNIXTIME(session/1000)) DESC") or die(mysqli_error($con));
   $yeararray = array();
   $i = 0;
   while($row = mysqli_fetch_assoc($yearquery)) {
