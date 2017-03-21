@@ -89,7 +89,7 @@ while($row = mysqli_fetch_assoc($sessionqry)) {
     $session_profileName = $row["profileName"];
 
     // Do not show sessions smaller than $min_session_size
-    if ($session_size >= $min_session_size) {
+    if ($row["sessionsize"] >= $min_session_size) {
         $sid = $row["session"];
         $sids[] = preg_replace('/\D/', '', $sid);
         $seshdates[$sid] = date($date_format, substr($sid, 0, -3));
