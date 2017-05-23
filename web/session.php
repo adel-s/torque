@@ -1,6 +1,7 @@
 <?php
 //echo "<!-- Begin session.php at ".date("H:i:s", microtime(true))." -->\r\n";
-$loadstart = date("g:i:s A", microtime(true));
+require_once("./creds.php");
+$loadstart = date($time_format, microtime(true));
 $loadmicrostart = explode(' ', microtime());
 $loadmicrostart = $loadmicrostart[1] + $loadmicrostart[0];
 ini_set('memory_limit', '-1');
@@ -65,23 +66,118 @@ if (isset($sids[0])) {
   if($idx>0) {
     $session_id_next = $sids[$idx-1];
   }
-  // Get GPS data for the currently selectedsession
-  $sessionqry = mysqli_query($con, "SELECT kff1006, kff1005 FROM $db_table
-              WHERE session=$session_id
-              ORDER BY time DESC") or die(mysqli_error($con));
+
+  // Get GPS data and notices for the currently selected session
+  $sessionqry = mysqli_query($con, "SELECT kff1006, kff1005, notice, noticeClass, time FROM $db_table
+            WHERE session=$session_id
+            AND ((kff1006<>0 AND kff1005<>0) OR notice IS NOT NULL)
+            ORDER BY time ASC") or die(mysqli_error($con));
   $geolocs = array();
-  while($geo = mysqli_fetch_array($sessionqry)) {
-    if (($geo["0"] != 0) && ($geo["1"] != 0)) {
-      $geolocs[] = array("lat" => $geo["0"], "lon" => $geo["1"]);
-    }
+  while ($geo = mysqli_fetch_array($sessionqry)) {
+      $geolocs[] = [
+          "lat" => $geo["0"],
+          "lon" => preg_replace('/\s+/', '', $geo["1"]),
+          "notice" => $geo["2"],
+          "noticeclass" => preg_replace('/.*\.(.*)/i', '${1}', $geo["3"]),
+          "time" => date($date_format, substr($geo["4"], 0, -3)),
+      ];
+  }
+
+  // Hack: add notice and noticeclass into last geo position
+  $geolocs[sizeof($geolocs)-1]["notice"] = "Trip finished";
+  $geolocs[sizeof($geolocs)-1]["noticeclass"] = "TripFinished";
+
+  // Because Torque sends notices without geoposition - using next closest geoposition from array
+  for($i = 0; $i < sizeof($geolocs); $i++) {
+      if ($geolocs[$i]['notice'] && $geolocs[$i]['lat'] == 0) {
+          for ($k = $i; $k < sizeof($geolocs); $k++) {
+              if ($geolocs[$k]['lat'] != 0) {
+                  $geolocs[$i]['lat'] = $geolocs[$k]['lat'];
+                  $geolocs[$i]['lon'] = $geolocs[$k]['lon'];
+                  break;
+              }
+          }
+      }
   }
 
   // Create array of Latitude/Longitude strings in Google Maps JavaScript format
   $mapdata = array();
   foreach($geolocs as $d) {
-    $mapdata[] = "new google.maps.LatLng(".$d['lat'].", ".$d['lon'].")";
+      if (($d["lat"] != 0) && ($d["lon"] != 0)) {
+          $mapdata[] = "new google.maps.LatLng(" . $d['lat'] . ", " . $d['lon'] . ")";
+      }
   }
   $imapdata = implode(",\n          ", $mapdata);
+
+  // Create markers and infoWindows
+  if($show_markers) {
+      $markers = array();
+      for ($i = 0; $i < sizeof($geolocs); $i++) {
+          if ($geolocs[$i]['notice']) {
+              // Choosing image for marker based on notice class
+              switch ($geolocs[$i]['noticeclass']) {
+                  case (("TripNotice" && $geolocs[$i]['notice'] == 'Trip started') ? true : false):
+                      $image = "image_start";
+                      break;
+                  case "TripFinished":
+                      $image = "image_finish";
+                      break;
+                  case (preg_match('/.*fault.*/i', $geolocs[$i]['noticeclass']) ? true : false):
+                      $image = "image_error";
+                      break;
+                  default:
+                      $image = "image_event";
+                      break;
+              }
+
+              $message_fields = array();
+              $message_fields[] = explode('.', $geolocs[$i]['notice']);
+              $link = "";
+
+              $title = $message_fields[0][0];
+              $short_description = preg_replace('/\s/', '', $message_fields[0][1]);
+              $long_description = $message_fields[0][2];
+              if ($short_description) {
+                  $link = "<a href=\"" . $error_codes_url . $short_description . "/\" target = _blank>" . $error_codes_url . $short_description . "</a>";
+              }
+              $class = $geolocs[$i]['noticeclass'];
+              $date = $geolocs[$i]['time'];
+
+              $markers[] = "var contentString_" . $i . " = '<div id=\"content\"><h3 id=\"firstHeading\" class=\"firstHeading\">" . $title . "</h3>'+
+                              '<div id=\"bodyContent\">'+
+                              '<p><b>" . $short_description . "</b>' +
+                              '<br>'+
+                              '<p>" . $long_description . "</p>'+
+                              '<br>'+
+                              '<p>" . $link . "</p>'+
+                              '<br>'+
+                              '<p>" . $class . "</p>'+
+                              '<p>" . $date . "</p>'+
+                              '</div>'+
+                              '</div>';
+                
+        var marker_" . $i . " = new google.maps.Marker({
+            icon: " . $image . ",
+            position: path[" . $i . "],
+            map: map
+            });
+                
+        var infowindow_" . $i . " = new google.maps.InfoWindow({
+            content: contentString_" . $i . ",
+            maxWidth: 200
+            });
+
+        marker_" . $i . ".addListener('click', function() {
+            if ( prev_infowindow ) {
+                prev_infowindow.close();
+                }
+            prev_infowindow = infowindow_" . $i . ";
+            infowindow_" . $i . ".open(map, marker_" . $i . ");
+            });";
+          }
+      }
+      $imarkers = implode("\n\n        ", $markers);
+  }
 
   // Don't need to set zoom manually
   $setZoomManually = 0;
@@ -90,7 +186,7 @@ if (isset($sids[0])) {
   $yearquery = mysqli_query($con, "SELECT YEAR(FROM_UNIXTIME(session/1000)) as 'year'
               FROM $db_sessions_table WHERE session <> ''
               GROUP BY YEAR(FROM_UNIXTIME(session/1000)) 
-              ORDER BY YEAR(FROM_UNIXTIME(session/1000))") or die(mysqli_error($con));
+              ORDER BY YEAR(FROM_UNIXTIME(session/1000)) DESC") or die(mysqli_error($con));
   $yeararray = array();
   $i = 0;
   while($row = mysqli_fetch_assoc($yearquery)) {
@@ -220,7 +316,19 @@ if (isset($sids[0])) {
           strokeWeight: 4
         });
         line.setMap(map);
+
+        // Markers and info windows
+        var image_start  = 'static/markers/start.png';
+        var image_finish = 'static/markers/finish.png';
+        var image_error  = 'static/markers/error.png';
+        var image_event  = 'static/markers/event.png';
+
+        var prev_infowindow = false;
+
+        <?php if($show_markers) { echo $imarkers; } ?>
+
       };
+
       google.maps.event.addDomListener(window, 'load', initialize);
     </script>
 <?php if ($setZoomManually === 0) { ?>
@@ -530,7 +638,7 @@ if (isset($sids[0])) {
           <a href="./pid_edit.php" title="Edit PIDs">Edit PIDs</a><br />
           <a href="https://github.com/surfrock66/torque" title="View Source On Github">View Source On Github</a>
           <p style="font-size:10px;margin-top:20px;" >
-            Render Start: <?php echo $loadstart; ?>; Render End: <?php $loadend = date("h:i:s A", microtime(true)); echo $loadend; ?><br />
+            Render Start: <?php echo $loadstart; ?>; Render End: <?php $loadend = date($time_format, microtime(true)); echo $loadend; ?><br />
             Load Time: <?php $loadmicroend = explode(' ', microtime()); $loadmicroend = $loadmicroend[1] + $loadmicroend[0]; echo $loadmicroend-$loadmicrostart; ?> seconds<br />
             Session ID: <?php echo $session_id; ?>
           </p>

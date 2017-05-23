@@ -51,6 +51,8 @@ if (isset($mergesession) && !empty($mergesession) && isset($mergesess1) && !empt
         } else {
             $delquery = "DELETE FROM $db_sessions_table WHERE session = '$value'";
             mysqli_query($con, $delquery) or die(mysqli_error($con));
+            $delnoticequery = "DELETE FROM $db_table WHERE session = '$value' AND notice = 'Trip Started'";
+            mysqli_query($con, $delnoticequery) or die(mysqli_error($con));
             $updatequery = "UPDATE $db_table SET session=$newsession WHERE session=".quote_value($value);
             mysqli_query($con, $updatequery) or die(mysqli_error($con));
         }
@@ -103,14 +105,14 @@ if (isset($mergesession) && !empty($mergesession) && isset($mergesess1) && !empt
         </thead>
         <tbody>
 <?php
-    $sessqry = mysqli_query($con, "SELECT timestart, timeend, session, profileName, sessionsize FROM $db_sessions_table WHERE sessionsize >= 20 ORDER BY session desc") or die(mysqli_error($con));
+    $sessqry = mysqli_query($con, "SELECT timestart, timeend, session, profileName, sessionsize FROM $db_sessions_table WHERE sessionsize >= $min_session_size ORDER BY session desc") or die(mysqli_error($con));
     $i = 0;
     while ($x = mysqli_fetch_array($sessqry)) {
 ?>
           <tr>
             <td><input type="checkbox" name="<?php echo $x['session']; ?>" <?php if ($x['session'] == $mergesession) { echo "checked disabled"; } ?>/></td>
-            <td id="start:<?php echo $x['session']; ?>"><?php echo date("F d, Y h:ia", substr($x["timestart"], 0, -3)); ?></td>
-            <td id="end:<?php echo $x['session']; ?>"><?php echo date("F d, Y h:ia", substr($x["timeend"], 0, -3)); ?></td>
+            <td id="start:<?php echo $x['session']; ?>"><?php echo date($date_format, substr($x["timestart"], 0, -3)); ?></td>
+            <td id="end:<?php echo $x['session']; ?>"><?php echo date($date_format, substr($x["timeend"], 0, -3)); ?></td>
             <td id="length:<?php echo $x['session']; ?>"><?php echo gmdate("H:i:s", ($x["timeend"] - $x["timestart"])/1000); ?></td>
             <td id="size:<?php echo $x['session']; ?>"><?php echo $x["sessionsize"]; ?></td>
             <td id="profile:<?php echo $x['session']; ?>"><?php echo $x["profileName"]; ?></td>
