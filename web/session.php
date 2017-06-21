@@ -116,7 +116,7 @@ if (isset($sids[0])) {
           if ($geolocs[$i]['notice']) {
               // Choosing image for marker based on notice class
               switch ($geolocs[$i]['noticeclass']) {
-                  case (("TripNotice" && $geolocs[$i]['notice'] == 'Trip started') ? true : false):
+                  case (("TripNotice" && $i == 0) ? true : false):
                       $image = "image_start";
                       break;
                   case "TripFinished":
