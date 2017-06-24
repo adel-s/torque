@@ -49,12 +49,10 @@ GRANT ALL PRIVILEGES ON torque.* TO 'steve'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Then create a table in the database to store the logged data using the `create_torque_log_table.sql`, the `create_torque_sessions_table.sql`, and the `create_torque_keys_table.sql` files provided in the `scripts` folder of this repo: 
+Then create a table in the database to store the logged data using the `create_torque_tables.sql` file provided in the `scripts` folder of this repo: 
 
 ```bash
-mysql -u yoursqlusername -p < scripts/create_torque_log_table.sql
-mysql -u yoursqlusername -p < scripts/create_torque_sessions_table.sql
-mysql -u yoursqlusername -p < scripts/create_torque_keys_table.sql
+mysql -u yoursqlusername -p torque < scripts/create_torque_tables.sql
 ```
 
 ### OPTIONAL: Create Google Maps Javascript API Key ###
