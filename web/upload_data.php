@@ -27,8 +27,8 @@ if (sizeof($_GET) > 0) {
     if (preg_match("/^k/", $key)) {
       // Keep columns starting with k
       $keys[] = $key;
-      // My Torque app tries to pass "Infinity" in for some values...catch that error, set to -1
-      if ($value == 'Infinity') {
+      // Check if value is not numeric ("Infinity", "NaN", etc.)
+      if (! is_numeric($value)) {
         $values[] = -1;
       } else {
         $values[] = $value;
