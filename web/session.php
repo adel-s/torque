@@ -27,6 +27,11 @@ if (isset($_GET["id"])) {
   $session_id = preg_replace('/\D/', '', $_GET['id']);
 }
 
+// Call exit function
+if (isset($_GET['logout'])) {
+    logout_user();
+}
+
 // 2015.08.31 - edit by surfrock66 - Define and capture variables for maintaining
 //  the year and month filters between sessions.
 $filteryear = "";
@@ -413,7 +418,7 @@ if (isset($sids[0])) {
     <div class="navbar navbar-default navbar-fixed-top navbar-inverse" role="navigation">
       <div class="container">
         <div class="navbar-header">
-          <a class="navbar-brand" href="session.php">Open Torque Viewer</a>
+            <a class="navbar-brand">Open Torque Viewer [<?php echo $_SESSION['torque_user'] ?>&nbsp;<img width="20" heigth="20" src="./static/logout.png" onClick="location.href='session.php?logout=true'">]</a>
         </div>
       </div>
     </div>
